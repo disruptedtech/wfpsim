@@ -263,7 +263,6 @@ var weaponNames = []string{
 	"wolffang",
 	"wolfsgravestone",
 	"xiphosmoonlight",
-	"beyondthechrysalis",
 }
 
 const (
