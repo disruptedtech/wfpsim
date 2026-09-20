@@ -262,6 +262,7 @@ var weaponNames = []string{
 	"wolffang",
 	"wolfsgravestone",
 	"xiphosmoonlight",
+	"beyondthechrysalis",
 }
 
 const (
@@ -283,6 +284,7 @@ const (
 	Azurelight
 	BalladOfTheBoundlessBlue
 	BalladOfTheFjords
+	BeyondTheChrysalis
 	BeaconOfTheReedSea
 	BeginnersProtector
 	BlackcliffAgate
