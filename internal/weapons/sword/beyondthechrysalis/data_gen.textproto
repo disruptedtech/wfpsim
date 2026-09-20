@@ -7,12 +7,12 @@ base_stats: {
     base_props: {
         prop_type: FIGHT_PROP_BASE_ATTACK
         initial_value: 87
-        curve: GROW_CURVE_ATTACK_304
+        curve: GROW_CURVE_ATTACK_201
     }
     base_props: {
         prop_type: FIGHT_PROP_CRITICAL_HURT
         initial_value: 0.131
-        curve: GROW_CURVE_CRITICAL_304
+        curve: GROW_CURVE_CRITICAL_201
     }
 }
 promo_data: {
