@@ -85,12 +85,12 @@ func (w *Weapon) onSkillOrBurst(cdBuff, swirlBuff, maxEnergy float64) bool {
 			},
 		})
 
-	case 1: // Winds of Defiance - Stellar Swirl DMG buff
+	case 1: // Winds of Defiance - Swirl DMG buff
 		val := make([]float64, attributes.EndStatType)
-		val[attributes.SwirlP] = swirlBuff
+		val[attributes.ElectroP] = swirlBuff
 		w.char.AddStatMod(character.StatMod{
 			Base:         modifier.NewBase(defianceKey, buffDuration),
-			AffectedStat: attributes.SwirlP,
+			AffectedStat: attributes.ElectroP,
 			Amount: func() ([]float64, bool) {
 				return val, true
 			},
@@ -103,12 +103,8 @@ func (w *Weapon) onSkillOrBurst(cdBuff, swirlBuff, maxEnergy float64) bool {
 			if !w.char.StatusIsActive(plentyKey) || energyGiven >= maxEnergy {
 				return true
 			}
-			toGive := maxEnergy - energyGiven
-			if toGive > maxEnergy {
-				toGive = maxEnergy
-			}
-			w.char.AddEnergy("beyondthechrysalis-plenty", toGive)
-			energyGiven += toGive
+			w.char.AddEnergy("beyondthechrysalis-plenty", maxEnergy-energyGiven)
+			energyGiven = maxEnergy
 			return false
 		}, plentyKey)
 	}
