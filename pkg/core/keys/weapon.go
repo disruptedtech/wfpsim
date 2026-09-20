@@ -50,6 +50,7 @@ var weaponNames = []string{
 	"azurelight",
 	"balladoftheboundlessblue",
 	"balladofthefjords",
+	"beyondthechrysalis",
 	"beaconofthereedsea",
 	"beginnersprotector",
 	"blackcliffagate",
