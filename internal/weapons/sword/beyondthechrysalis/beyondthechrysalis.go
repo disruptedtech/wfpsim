@@ -15,7 +15,6 @@ import (
 const (
 	devotionKey  = "beyondthechrysalis-devotion"
 	defianceKey  = "beyondthechrysalis-defiance"
-	plentyKey    = "beyondthechrysalis-plenty"
 	buffDuration = 10 * 60
 )
 
@@ -41,13 +40,8 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 		refine: p.Refine,
 	}
 
-	// CD buff per refine: 56/72/88/104/120%
 	cdBuff := 0.40 + float64(w.refine)*0.16
-
-	// Stellar Swirl DMG buff per refine: 36/45/54/63/72%
 	swirlBuff := 0.27 + float64(w.refine)*0.09
-
-	// Max energy per refine: 5/5.5/6/6.5/7
 	maxEnergy := 4.5 + float64(w.refine)*0.5
 
 	onSkillOrBurst := func(args ...any) {
@@ -55,29 +49,31 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 			return
 		}
 		switch w.sequence % 3 {
-case 0: // Winds of Devotion - CRIT DMG buff
-    if !char.StatusIsActive(devotionKey) {
-        m := make([]float64, attributes.EndStatType)
-        m[attributes.CD] = cdBuff
-        char.AddStatMod(character.StatMod{
-            Base:         modifier.NewBase(devotionKey, buffDuration),
-            AffectedStat: attributes.CD,
-            Amount: func() []float64 {
-                return m
-				},
-			})
-case 1: // Winds of Defiance - Swirl DMG buff
-    if !char.StatusIsActive(defianceKey) {
-        m := make([]float64, attributes.EndStatType)
-        m[attributes.AnemoP] = swirlBuff
-        char.AddStatMod(character.StatMod{
-            Base:         modifier.NewBase(defianceKey, buffDuration),
-            AffectedStat: attributes.AnemoP,
-            Amount: func() []float64 {
-                return m
-				},
-			})
-		case 2: // Winds of Plenty - Energy regen
+		case 0:
+			if !char.StatusIsActive(devotionKey) {
+				m := make([]float64, attributes.EndStatType)
+				m[attributes.CD] = cdBuff
+				char.AddStatMod(character.StatMod{
+					Base:         modifier.NewBase(devotionKey, buffDuration),
+					AffectedStat: attributes.CD,
+					Amount: func() []float64 {
+						return m
+					},
+				})
+			}
+		case 1:
+			if !char.StatusIsActive(defianceKey) {
+				m := make([]float64, attributes.EndStatType)
+				m[attributes.AnemoP] = swirlBuff
+				char.AddStatMod(character.StatMod{
+					Base:         modifier.NewBase(defianceKey, buffDuration),
+					AffectedStat: attributes.AnemoP,
+					Amount: func() []float64 {
+						return m
+					},
+				})
+			}
+		case 2:
 			char.AddEnergy("beyondthechrysalis-plenty", maxEnergy)
 		}
 		w.sequence++
