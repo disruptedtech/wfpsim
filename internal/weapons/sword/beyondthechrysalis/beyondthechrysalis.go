@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/genshinsim/gcsim/pkg/core"
+	"github.com/genshinsim/gcsim/pkg/core/attacks"
 	"github.com/genshinsim/gcsim/pkg/core/attributes"
 	"github.com/genshinsim/gcsim/pkg/core/combat"
 	"github.com/genshinsim/gcsim/pkg/core/event"
@@ -41,16 +42,15 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 		refine: p.Refine,
 	}
 
-	cdBuff := 0.40 + float64(w.refine-1)*0.16
-	swirlBuff := 0.27 + float64(w.refine-1)*0.09
-	maxEnergy := 4.5 + float64(w.refine-1)*0.5
+	cdBuff := 0.40 + float64(w.refine)*0.16
+	swirlBuff := 0.27 + float64(w.refine)*0.09
+	maxEnergy := 4.5 + float64(w.refine)*0.5
 
 	m := make([]float64, attributes.EndStatType)
 
-	// 1. Stat Modifier for CRIT DMG (Winds of Devotion)
 	char.AddStatMod(character.StatMod{
-		Base:         modifier.NewBase("beyondthechrysalis-stats", -1),
-		AffectedStat: attributes.CD,
+		Base:         modifier.NewBase("beyondthechrysalis", -1),
+		AffectedStat: attributes.NoStat,
 		Amount: func() []float64 {
 			m[attributes.CD] = 0
 			if char.StatusIsActive(devotionKey) {
@@ -60,15 +60,17 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 		},
 	})
 
-// 2. Reaction Bonus Modifier for Stellar Swirl (Winds of Defiance)
 	char.AddReactBonusMod(character.ReactBonusMod{
-		Base: modifier.NewBase("beyondthechrysalis-defiance", -1),
-		Amount: func(atk *combat.AttackEvent, t combat.Target) (float64, bool) {
-			isStellarSwirl := atk.Info.AttackTag == attacks.AttackTagReactionStellarSwirl || atk.Info.AttackTag == attacks.AttackTagDirectStellarSwirl
-			if char.StatusIsActive(defianceKey) && isStellarSwirl {
-				return swirlBuff, false
+		Base: modifier.NewBase(defianceKey, -1),
+		Amount: func(ai combat.AttackInfo, t combat.Target) (float64, bool) {
+			if !char.StatusIsActive(defianceKey) {
+				return 0, false
 			}
-			return 0, false
+			if ai.AttackTag != attacks.AttackTagReactionStellarSwirl &&
+				ai.AttackTag != attacks.AttackTagDirectStellarSwirl {
+				return 0, false
+			}
+			return swirlBuff, false
 		},
 	})
 
