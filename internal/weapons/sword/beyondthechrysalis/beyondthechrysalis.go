@@ -55,24 +55,26 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 			return
 		}
 		switch w.sequence % 3 {
-		case 0: // Winds of Devotion - CRIT DMG buff
-			m := make([]float64, attributes.EndStatType)
-			m[attributes.CD] = cdBuff
-			char.AddStatMod(character.StatMod{
-				Base:         modifier.NewBase(devotionKey, buffDuration),
-				AffectedStat: attributes.CD,
-				Amount: func() []float64 {
-					return m
+case 0: // Winds of Devotion - CRIT DMG buff
+    if !char.StatusIsActive(devotionKey) {
+        m := make([]float64, attributes.EndStatType)
+        m[attributes.CD] = cdBuff
+        char.AddStatMod(character.StatMod{
+            Base:         modifier.NewBase(devotionKey, buffDuration),
+            AffectedStat: attributes.CD,
+            Amount: func() []float64 {
+                return m
 				},
 			})
-		case 1: // Winds of Defiance - Swirl DMG buff
-			m := make([]float64, attributes.EndStatType)
-			m[attributes.AnemoP] = swirlBuff
-			char.AddStatMod(character.StatMod{
-				Base:         modifier.NewBase(defianceKey, buffDuration),
-				AffectedStat: attributes.AnemoP,
-				Amount: func() []float64 {
-					return m
+case 1: // Winds of Defiance - Swirl DMG buff
+    if !char.StatusIsActive(defianceKey) {
+        m := make([]float64, attributes.EndStatType)
+        m[attributes.AnemoP] = swirlBuff
+        char.AddStatMod(character.StatMod{
+            Base:         modifier.NewBase(defianceKey, buffDuration),
+            AffectedStat: attributes.AnemoP,
+            Amount: func() []float64 {
+                return m
 				},
 			})
 		case 2: // Winds of Plenty - Energy regen
