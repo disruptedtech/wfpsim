@@ -69,8 +69,9 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 		switch w.sequence % 3 {
 		case 0:
 			char.AddStatus(devotionKey, buffDuration, true)
-		case 1:
-			char.AddStatus(defianceKey, buffDuration, true)
+        case 1:
+    // Stellar Swirl reaction DMG bonus - not yet implemented correctly
+    // TODO: find correct attribute for Stellar Swirl reaction DMG
 		case 2:
 			char.AddEnergy("beyondthechrysalis-plenty", maxEnergy)
 		}
