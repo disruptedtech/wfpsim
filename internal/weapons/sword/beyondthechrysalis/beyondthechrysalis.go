@@ -44,35 +44,33 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 	swirlBuff := 0.27 + float64(w.refine)*0.09
 	maxEnergy := 4.5 + float64(w.refine)*0.5
 
+	m := make([]float64, attributes.EndStatType)
+
+	char.AddStatMod(character.StatMod{
+		Base:         modifier.NewBase("beyondthechrysalis", -1),
+		AffectedStat: attributes.NoStat,
+		Amount: func() []float64 {
+			m[attributes.CD] = 0
+			m[attributes.AnemoP] = 0
+			if char.StatusIsActive(devotionKey) {
+				m[attributes.CD] = cdBuff
+			}
+			if char.StatusIsActive(defianceKey) {
+				m[attributes.AnemoP] = swirlBuff
+			}
+			return m
+		},
+	})
+
 	onSkillOrBurst := func(args ...any) {
 		if c.Player.Active() != char.Index() {
 			return
 		}
 		switch w.sequence % 3 {
 		case 0:
-			if !char.StatusIsActive(devotionKey) {
-				m := make([]float64, attributes.EndStatType)
-				m[attributes.CD] = cdBuff
-				char.AddStatMod(character.StatMod{
-					Base:         modifier.NewBase(devotionKey, buffDuration),
-					AffectedStat: attributes.CD,
-					Amount: func() []float64 {
-						return m
-					},
-				})
-			}
+			char.AddStatus(devotionKey, buffDuration, true)
 		case 1:
-			if !char.StatusIsActive(defianceKey) {
-				m := make([]float64, attributes.EndStatType)
-				m[attributes.AnemoP] = swirlBuff
-				char.AddStatMod(character.StatMod{
-					Base:         modifier.NewBase(defianceKey, buffDuration),
-					AffectedStat: attributes.AnemoP,
-					Amount: func() []float64 {
-						return m
-					},
-				})
-			}
+			char.AddStatus(defianceKey, buffDuration, true)
 		case 2:
 			char.AddEnergy("beyondthechrysalis-plenty", maxEnergy)
 		}
