@@ -38,6 +38,8 @@ var WeaponNameToKey = map[string]keys.Weapon{
 	"balladofthefjords":               keys.BalladOfTheFjords,
 	"ballad":                          keys.BalladOfTheFjords,
 	"fjords":                          keys.BalladOfTheFjords,
+	"beyondthechrysalis":              keys.BeyondTheChrysalis,
+    "chrysalis":                       keys.BeyondTheChrysalis,
 	"beaconofthereedsea":              keys.BeaconOfTheReedSea,
 	"beacon":                          keys.BeaconOfTheReedSea,
 	"beginnersprotector":              keys.BeginnersProtector,
