@@ -62,12 +62,12 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 
 	char.AddReactBonusMod(character.ReactBonusMod{
 		Base: modifier.NewBase(defianceKey, -1),
-		Amount: func(ai combat.AttackInfo, t combat.Target) (float64, bool) {
+		Amount: func(atk *combat.AttackEvent, t combat.Target) (float64, bool) {
 			if !char.StatusIsActive(defianceKey) {
 				return 0, false
 			}
-			if ai.AttackTag != attacks.AttackTagReactionStellarSwirl &&
-				ai.AttackTag != attacks.AttackTagDirectStellarSwirl {
+			if atk.Info.AttackTag != attacks.AttackTagReactionStellarSwirl &&
+				atk.Info.AttackTag != attacks.AttackTagDirectStellarSwirl {
 				return 0, false
 			}
 			return swirlBuff, false
