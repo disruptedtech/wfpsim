@@ -60,12 +60,12 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 		},
 	})
 
-	// 2. Reaction Bonus Modifier for Stellar Swirl (Winds of Defiance)
+// 2. Reaction Bonus Modifier for Stellar Swirl (Winds of Defiance)
 	char.AddReactBonusMod(character.ReactBonusMod{
 		Base: modifier.NewBase("beyondthechrysalis-defiance", -1),
-		Amount: func(rei combat.ReactionType) (float64, bool) {
-			// Identifies the reaction via the core combat enum
-			if char.StatusIsActive(defianceKey) && rei == combat.ReactionStellarSwirl {
+		Amount: func(atk *combat.AttackEvent, t combat.Target) (float64, bool) {
+			isStellarSwirl := atk.Info.AttackTag == attacks.AttackTagReactionStellarSwirl || atk.Info.AttackTag == attacks.AttackTagDirectStellarSwirl
+			if char.StatusIsActive(defianceKey) && isStellarSwirl {
 				return swirlBuff, false
 			}
 			return 0, false
