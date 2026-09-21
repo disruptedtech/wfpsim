@@ -4,13 +4,12 @@ import (
 	"fmt"
 
 	"github.com/genshinsim/gcsim/pkg/core"
-	"github.com/genshinsim/gcsim/pkg/core/attacks"
 	"github.com/genshinsim/gcsim/pkg/core/attributes"
-	"github.com/genshinsim/gcsim/pkg/core/combat"
 	"github.com/genshinsim/gcsim/pkg/core/event"
 	"github.com/genshinsim/gcsim/pkg/core/info"
 	"github.com/genshinsim/gcsim/pkg/core/keys"
 	"github.com/genshinsim/gcsim/pkg/core/player/character"
+	"github.com/genshinsim/gcsim/pkg/core/reactions"
 	"github.com/genshinsim/gcsim/pkg/modifier"
 )
 
@@ -47,7 +46,6 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 	maxEnergy := 4.5 + float64(w.refine-1)*0.5
 
 	m := make([]float64, attributes.EndStatType)
-	dmgMod := make([]float64, attributes.EndStatType)
 
 	// 1. Stat Modifier for CRIT DMG (Winds of Devotion)
 	char.AddStatMod(character.StatMod{
@@ -62,18 +60,15 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 		},
 	})
 
-	// 2. Attack Modifier for Stellar Swirl DMG (Winds of Defiance)
-	char.AddAttackMod(character.AttackMod{
+	// 2. Reaction Bonus Modifier for Stellar Swirl (Winds of Defiance)
+	char.AddReactBonusMod(character.ReactBonusMod{
 		Base: modifier.NewBase("beyondthechrysalis-defiance", -1),
-		Amount: func(atk *combat.AttackEvent, t combat.Target) ([]float64, bool) {
-			dmgMod[attributes.DmgP] = 0
-			
-			// If buff is active AND the attack is tagged as Stellar Swirl
-			if char.StatusIsActive(defianceKey) && atk.Info.AttackTag == attacks.AttackTagDirectStellarSwirl {
-				dmgMod[attributes.DmgP] = swirlBuff
-				return dmgMod, true
+		Amount: func(rei reactions.ReactionType) (float64, bool) {
+			// Matches the triggered reaction against the engine's Stellar Swirl
+			if char.StatusIsActive(defianceKey) && rei == reactions.StellarSwirl {
+				return swirlBuff, false
 			}
-			return nil, false
+			return 0, false
 		},
 	})
 
