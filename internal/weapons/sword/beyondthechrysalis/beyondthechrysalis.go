@@ -6,11 +6,11 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core"
 	"github.com/genshinsim/gcsim/pkg/core/attacks"
 	"github.com/genshinsim/gcsim/pkg/core/attributes"
-	"github.com/genshinsim/gcsim/pkg/core/combat"
 	"github.com/genshinsim/gcsim/pkg/core/event"
 	"github.com/genshinsim/gcsim/pkg/core/info"
 	"github.com/genshinsim/gcsim/pkg/core/keys"
 	"github.com/genshinsim/gcsim/pkg/core/player/character"
+	"github.com/genshinsim/gcsim/pkg/core/targets"
 	"github.com/genshinsim/gcsim/pkg/modifier"
 )
 
@@ -60,9 +60,9 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 		},
 	})
 
-	char.AddReactBonusMod(character.ReactBonusMod{
+char.AddReactBonusMod(character.ReactBonusMod{
 		Base: modifier.NewBase(defianceKey, -1),
-		Amount: func(atk *combat.AttackEvent, t combat.Target) (float64, bool) {
+		Amount: func(atk *attacks.AttackEvent, t targets.Target) (float64, bool) {
 			if !char.StatusIsActive(defianceKey) {
 				return 0, false
 			}
