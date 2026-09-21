@@ -5,11 +5,11 @@ import (
 
 	"github.com/genshinsim/gcsim/pkg/core"
 	"github.com/genshinsim/gcsim/pkg/core/attributes"
+	"github.com/genshinsim/gcsim/pkg/core/combat"
 	"github.com/genshinsim/gcsim/pkg/core/event"
 	"github.com/genshinsim/gcsim/pkg/core/info"
 	"github.com/genshinsim/gcsim/pkg/core/keys"
 	"github.com/genshinsim/gcsim/pkg/core/player/character"
-	"github.com/genshinsim/gcsim/pkg/core/reactions"
 	"github.com/genshinsim/gcsim/pkg/modifier"
 )
 
@@ -63,9 +63,9 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 	// 2. Reaction Bonus Modifier for Stellar Swirl (Winds of Defiance)
 	char.AddReactBonusMod(character.ReactBonusMod{
 		Base: modifier.NewBase("beyondthechrysalis-defiance", -1),
-		Amount: func(rei reactions.ReactionType) (float64, bool) {
-			// Matches the triggered reaction against the engine's Stellar Swirl
-			if char.StatusIsActive(defianceKey) && rei == reactions.StellarSwirl {
+		Amount: func(rei combat.ReactionType) (float64, bool) {
+			// Identifies the reaction via the core combat enum
+			if char.StatusIsActive(defianceKey) && rei == combat.ReactionStellarSwirl {
 				return swirlBuff, false
 			}
 			return 0, false
