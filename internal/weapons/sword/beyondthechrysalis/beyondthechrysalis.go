@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	devotionKey     = "beyondthechrysalis-devotion"
-	defianceKey     = "beyondthechrysalis-defiance"
-	buffDuration    = 10 * 60
-	energyICD       = 4 * 60
+	devotionKey  = "beyondthechrysalis-devotion"
+	defianceKey  = "beyondthechrysalis-defiance"
+	energyIcdKey = "beyondthechrysalis-energy-icd"
+	buffDuration = 10 * 60
 )
 
 func init() {
@@ -25,12 +25,11 @@ func init() {
 }
 
 type Weapon struct {
-	Index           int
-	core            *core.Core
-	char            *character.CharWrapper
-	refine          int
-	sequence        int
-	lastEnergyFrame int
+	Index    int
+	core     *core.Core
+	char     *character.CharWrapper
+	refine   int
+	sequence int
 }
 
 func (w *Weapon) SetIndex(idx int) { w.Index = idx }
@@ -38,10 +37,9 @@ func (w *Weapon) Init() error      { return nil }
 
 func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) (info.Weapon, error) {
 	w := &Weapon{
-		char:            char,
-		core:            c,
-		refine:          p.Refine,
-		lastEnergyFrame: -energyICD,
+		char:   char,
+		core:   c,
+		refine: p.Refine,
 	}
 
 	cdBuff := 0.40 + float64(w.refine)*0.16
@@ -80,9 +78,9 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 		case 1:
 			char.AddStatus(defianceKey, buffDuration, true)
 		case 2:
-			if c.F-w.lastEnergyFrame >= energyICD {
+			if !char.StatusIsActive(energyIcdKey) {
 				char.AddEnergy("beyondthechrysalis-plenty", maxEnergy)
-				w.lastEnergyFrame = c.F
+				char.AddStatus(energyIcdKey, 4*60, true)
 			}
 		}
 		w.sequence++
@@ -90,12 +88,13 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 
 	c.Events.Subscribe(event.OnSkill, onSkillOrBurst, fmt.Sprintf("beyondthechrysalis-%v", char.Base.Key.String()))
 	c.Events.Subscribe(event.OnBurst, onSkillOrBurst, fmt.Sprintf("beyondthechrysalis-%v", char.Base.Key.String()))
+	
 	c.Events.Subscribe(event.OnCharacterSwap, func(args ...any) {
 		prev := args[0].(int)
 		if prev == char.Index() {
 			w.sequence = 0
-			char.AddStatus(devotionKey, 0, true)
-			char.AddStatus(defianceKey, 0, true)
+			char.DeleteStatMod(devotionKey)
+			char.DeleteStatus(defianceKey)
 		}
 	}, fmt.Sprintf("beyondthechrysalis-swap-%v", char.Base.Key.String()))
 
