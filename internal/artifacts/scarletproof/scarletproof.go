@@ -1,8 +1,6 @@
-package beyondthechrysalis
+package scarletproof
 
 import (
-	"fmt"
-
 	"github.com/genshinsim/gcsim/pkg/core"
 	"github.com/genshinsim/gcsim/pkg/core/attacks"
 	"github.com/genshinsim/gcsim/pkg/core/attributes"
@@ -10,95 +8,88 @@ import (
 	"github.com/genshinsim/gcsim/pkg/core/info"
 	"github.com/genshinsim/gcsim/pkg/core/keys"
 	"github.com/genshinsim/gcsim/pkg/core/player/character"
+	"github.com/genshinsim/gcsim/pkg/enemy"
 	"github.com/genshinsim/gcsim/pkg/modifier"
 )
 
-const (
-	devotionKey  = "beyondthechrysalis-devotion"
-	defianceKey  = "beyondthechrysalis-defiance"
-	buffDuration = 10 * 60
-	energyICD    = 4 * 60
-)
-
 func init() {
-	core.RegisterWeaponFunc(keys.BeyondTheChrysalis, NewWeapon)
+	core.RegisterSetFunc(keys.ScarletProof, NewSet)
 }
 
-type Weapon struct {
-	Index           int
-	core            *core.Core
-	char            *character.CharWrapper
-	refine          int
-	sequence        int
-	lastEnergyFrame int
+type Set struct {
+	stacks int
+	Index  int
+	Count  int
 }
 
-func (w *Weapon) SetIndex(idx int) { w.Index = idx }
-func (w *Weapon) Init() error      { return nil }
+func (s *Set) SetIndex(idx int) { s.Index = idx }
+func (s *Set) GetCount() int    { return s.Count }
+func (s *Set) Init() error      { return nil }
 
-func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) (info.Weapon, error) {
-	w := &Weapon{
-		char:            char,
-		core:            c,
-		refine:          p.Refine,
-		lastEnergyFrame: -energyICD,
+func NewSet(c *core.Core, char *character.CharWrapper, count int, param map[string]int) (info.Set, error) {
+	s := Set{Count: count}
+	s.stacks = 0
+
+	if count < 2 {
+		return &s, nil
+	}
+	m := make([]float64, attributes.EndStatType)
+	m[attributes.ATKP] = 0.18
+	char.AddStatMod(character.StatMod{
+		Base:         modifier.NewBase("scarletproof-2pc", -1),
+		AffectedStat: attributes.ATKP,
+		Amount: func() []float64 {
+			return m
+		},
+	})
+
+	if count < 4 {
+		return &s, nil
 	}
 
-	cdBuff := 0.40 + float64(w.refine)*0.16
-	swirlBuff := 0.27 + float64(w.refine)*0.09
-	maxEnergy := 4.5 + float64(w.refine)*0.5
+	m2 := make([]float64, attributes.EndStatType)
+	m2[attributes.CR] = 0.16
 
-	m := make([]float64, attributes.EndStatType)
-	m[attributes.CD] = cdBuff
+	gainBuff := func(char *character.CharWrapper) {
+		char.AddStatMod(character.StatMod{
+			Base:         modifier.NewBaseWithHitlag("scarletproof-4pc-cr", 10*60),
+			AffectedStat: attributes.CR,
+			Amount: func() []float64 {
+				return m2
+			},
+		})
 
-	onSkillOrBurst := func(args ...any) {
+		char.AddReactBonusMod(character.ReactBonusMod{
+			Base: modifier.NewBaseWithHitlag("scarletproof-4pc-react", 10*60),
+			Amount: func(ai info.AttackInfo) float64 {
+				switch ai.AttackTag {
+				case attacks.AttackTagDirectStellarSwirl,
+					attacks.AttackTagReactionStellarSwirl:
+					return 0.4
+				}
+				return 0
+			},
+		})
+	}
+	hook := func(args ...any) {
+		atk := args[1].(*info.AttackEvent)
+
+		if _, ok := args[0].(*enemy.Enemy); !ok {
+			return
+		}
+
+		if atk.Info.ActorIndex != char.Index() {
+			return
+		}
+
 		if c.Player.Active() != char.Index() {
 			return
 		}
-		switch w.sequence % 3 {
-		case 0: // Winds of Devotion - CD buff
-			char.AddStatMod(character.StatMod{
-				Base:         modifier.NewBaseWithHitlag(devotionKey, buffDuration),
-				AffectedStat: attributes.CD,
-				Amount: func() []float64 {
-					return m
-				},
-			})
-		case 1: // Winds of Defiance - Stellar Swirl buff
-			char.AddReactBonusMod(character.ReactBonusMod{
-				Base: modifier.NewBaseWithHitlag(defianceKey, buffDuration),
-				Amount: func(ai info.AttackInfo) float64 {
-					switch ai.AttackTag {
-					case attacks.AttackTagDirectStellarSwirl,
-						attacks.AttackTagReactionStellarSwirl:
-						return swirlBuff
-					}
-					return 0
-				},
-			})
-		case 2: // Winds of Plenty - Energy regen with 4s ICD
-			if c.F-w.lastEnergyFrame >= energyICD {
-				char.AddEnergy("beyondthechrysalis-plenty", maxEnergy)
-				w.lastEnergyFrame = c.F
-			}
-		}
-		w.sequence++
+
+		gainBuff(char)
 	}
 
-	c.Events.Subscribe(event.OnSkill, onSkillOrBurst, fmt.Sprintf("beyondthechrysalis-%v", char.Base.Key.String()))
-	c.Events.Subscribe(event.OnBurst, onSkillOrBurst, fmt.Sprintf("beyondthechrysalis-%v", char.Base.Key.String()))
-	c.Events.Subscribe(event.OnCharacterSwap, func(args ...any) {
-		prev := args[0].(int)
-		if prev == char.Index() {
-			w.sequence = 0
-			char.AddStatMod(character.StatMod{
-				Base:         modifier.NewBase(devotionKey, 0),
-				AffectedStat: attributes.CD,
-				Amount: func() []float64 { return nil },
-			})
-			char.DeleteStatus(defianceKey)
-		}
-	}, fmt.Sprintf("beyondthechrysalis-swap-%v", char.Base.Key.String()))
+	c.Events.Subscribe(event.OnStellarSwirl, hook, "scarletproof-4pc-"+char.Base.Key.String())
 
-	return w, nil
+	return &s, nil
 }
