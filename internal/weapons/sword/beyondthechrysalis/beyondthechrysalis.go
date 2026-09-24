@@ -16,8 +16,8 @@ import (
 const (
 	devotionKey  = "beyondthechrysalis-devotion"
 	defianceKey  = "beyondthechrysalis-defiance"
-	energyIcdKey = "beyondthechrysalis-energy-icd"
 	buffDuration = 10 * 60
+	energyICD    = 4 * 60
 )
 
 func init() {
@@ -25,11 +25,12 @@ func init() {
 }
 
 type Weapon struct {
-	Index    int
-	core     *core.Core
-	char     *character.CharWrapper
-	refine   int
-	sequence int
+	Index           int
+	core            *core.Core
+	char            *character.CharWrapper
+	refine          int
+	sequence        int
+	lastEnergyFrame int
 }
 
 func (w *Weapon) SetIndex(idx int) { w.Index = idx }
@@ -37,50 +38,48 @@ func (w *Weapon) Init() error      { return nil }
 
 func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) (info.Weapon, error) {
 	w := &Weapon{
-		char:   char,
-		core:   c,
-		refine: p.Refine,
+		char:            char,
+		core:            c,
+		refine:          p.Refine,
+		lastEnergyFrame: -energyICD,
 	}
 
 	cdBuff := 0.40 + float64(w.refine)*0.16
 	swirlBuff := 0.27 + float64(w.refine)*0.09
 	maxEnergy := 4.5 + float64(w.refine)*0.5
 
-	char.AddReactBonusMod(character.ReactBonusMod{
-		Base: modifier.NewBase(defianceKey, -1),
-		Amount: func(ai info.AttackInfo) float64 {
-			if !char.StatusIsActive(defianceKey) {
-				return 0
-			}
-			if ai.AttackTag != attacks.AttackTagReactionStellarSwirl &&
-				ai.AttackTag != attacks.AttackTagDirectStellarSwirl {
-				return 0
-			}
-			return swirlBuff
-		},
-	})
+	m := make([]float64, attributes.EndStatType)
+	m[attributes.CD] = cdBuff
 
 	onSkillOrBurst := func(args ...any) {
 		if c.Player.Active() != char.Index() {
 			return
 		}
 		switch w.sequence % 3 {
-		case 0:
-			m := make([]float64, attributes.EndStatType)
-			m[attributes.CD] = cdBuff
+		case 0: // Winds of Devotion - CD buff
 			char.AddStatMod(character.StatMod{
-				Base:         modifier.NewBase(devotionKey, buffDuration),
+				Base:         modifier.NewBaseWithHitlag(devotionKey, buffDuration),
 				AffectedStat: attributes.CD,
 				Amount: func() []float64 {
 					return m
 				},
 			})
-		case 1:
-			char.AddStatus(defianceKey, buffDuration, true)
-		case 2:
-			if !char.StatusIsActive(energyIcdKey) {
+		case 1: // Winds of Defiance - Stellar Swirl buff
+			char.AddReactBonusMod(character.ReactBonusMod{
+				Base: modifier.NewBaseWithHitlag(defianceKey, buffDuration),
+				Amount: func(ai info.AttackInfo) float64 {
+					switch ai.AttackTag {
+					case attacks.AttackTagDirectStellarSwirl,
+						attacks.AttackTagReactionStellarSwirl:
+						return swirlBuff
+					}
+					return 0
+				},
+			})
+		case 2: // Winds of Plenty - Energy regen with 4s ICD
+			if c.F-w.lastEnergyFrame >= energyICD {
 				char.AddEnergy("beyondthechrysalis-plenty", maxEnergy)
-				char.AddStatus(energyIcdKey, 4*60, true)
+				w.lastEnergyFrame = c.F
 			}
 		}
 		w.sequence++
@@ -88,13 +87,19 @@ func NewWeapon(c *core.Core, char *character.CharWrapper, p info.WeaponProfile) 
 
 	c.Events.Subscribe(event.OnSkill, onSkillOrBurst, fmt.Sprintf("beyondthechrysalis-%v", char.Base.Key.String()))
 	c.Events.Subscribe(event.OnBurst, onSkillOrBurst, fmt.Sprintf("beyondthechrysalis-%v", char.Base.Key.String()))
-	
 	c.Events.Subscribe(event.OnCharacterSwap, func(args ...any) {
 		prev := args[0].(int)
 		if prev == char.Index() {
 			w.sequence = 0
-			char.DeleteStatMod(devotionKey)
-			char.DeleteStatus(defianceKey)
+			char.AddStatMod(character.StatMod{
+				Base:         modifier.NewBase(devotionKey, 0),
+				AffectedStat: attributes.CD,
+				Amount:       func() []float64 { return nil },
+			})
+			char.AddReactBonusMod(character.ReactBonusMod{
+				Base:   modifier.NewBase(defianceKey, 0),
+				Amount: func(ai info.AttackInfo) float64 { return 0 },
+			})
 		}
 	}, fmt.Sprintf("beyondthechrysalis-swap-%v", char.Base.Key.String()))
 
